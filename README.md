@@ -2,7 +2,7 @@
 
 把一台 Android 设备当作「手柄」，通过 ADB + UHID 控制另一台 Android 设备。
 
-基于 [ScrcpyForAndroid](https://github.com/Miuzarte/ScrcpyForAndroid)（作者 Miuzarte）修改，后者又是
+基于 [ScrcpyForAndroid](https://github.com/Miuzarte/ScrcpyForAndroid)（作者 Miuzarte）修改，它本身是
 [scrcpy](https://github.com/Genymobile/scrcpy)（作者 Genymobile）的 Android 客户端。
 
 ## 说明
