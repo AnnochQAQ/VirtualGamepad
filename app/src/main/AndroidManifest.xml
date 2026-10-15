@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-sdk tools:overrideLibrary="top.yukonga.miuix.kmp.blur" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <!-- USB Host特性声明（可选，不强制要求） -->
+    <uses-feature
+        android:name="android.hardware.usb.host"
+        android:required="false" />
+    <!-- Android 17+: 本地网络访问权限 (门控局域网 mDNS 发现和局域网连接, 部分设备默认阻止) -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.ScrcpyForAndroid">
+
+        <!--
+          locale|layoutDirection: 应用内切语言 / 系统语言变化时就地生效, 不重建 Activity
+          重建会丢掉正在投屏的 Scrcpy 会话 (MainScreen 中由 remember 创建), 导致全屏进不去
+          文案由 Compose 的 LocalConfiguration / LocalResources 在 onConfigurationChanged 后自动刷新
+        -->
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize|smallestScreenSize|locale|layoutDirection"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            
+            <!-- USB设备连接过滤器 -->
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+            </intent-filter>
+            
+            <meta-data
+                android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
+                android:resource="@xml/usb_device_filter" />
+        </activity>
+
+        <activity
+            android:name=".StreamActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize|smallestScreenSize"
+            android:exported="false"
+            android:resizeableActivity="true"
+            android:supportsPictureInPicture="true" />
+
+        <activity
+            android:name=".LockscreenPasswordActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize|smallestScreenSize"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false" />
+
+        <!-- <profileable android:shell="true" /> -->
+
+        <!-- USB权限广播接收器 -->
+        <receiver
+            android:name=".nativecore.UsbPermissionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="io.github.miuzarte.scrcpyforandroid.USB_PERMISSION" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+
+</manifest>

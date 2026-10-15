@@ -1,0 +1,27 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "dependencyDashboard": true,
+  "git-submodules": {
+    "enabled": false
+  },
+  "schedule": [
+    "before 6am on Monday"
+  ],
+  "packageRules": [
+    {
+      "matchPackageNames": [
+        "miuix"
+      ],
+      "enabled": false
+    },
+    {
+      "matchPackageNames": [
+        "java-jdk"
+      ],
+      "allowedVersions": "<=21"
+    }
+  ]
+}
