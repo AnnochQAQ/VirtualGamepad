@@ -44,9 +44,9 @@ object GamepadPresets {
 
         // ABXY (右中, 菱形, 等距 40) —— 中心 (210, 250)
         buttons += VirtualButtonDef("face_top", "X", listOf(X), Anchor.TOP_RIGHT, 210f, 210f, sizeDp = 54f)
-        buttons += VirtualButtonDef("face_right", "A", listOf(A), Anchor.TOP_RIGHT, 250f, 250f, sizeDp = 54f)
+        buttons += VirtualButtonDef("face_right", "Y", listOf(Y), Anchor.TOP_RIGHT, 250f, 250f, sizeDp = 54f)
         buttons += VirtualButtonDef("face_bottom", "B", listOf(B), Anchor.TOP_RIGHT, 210f, 290f, sizeDp = 54f)
-        buttons += VirtualButtonDef("face_left", "Y", listOf(Y), Anchor.TOP_RIGHT, 170f, 250f, sizeDp = 54f)
+        buttons += VirtualButtonDef("face_left", "A", listOf(A), Anchor.TOP_RIGHT, 170f, 250f, sizeDp = 54f)
 
         // L3 / R3
         buttons += VirtualButtonDef("l3", "L3", listOf(L3), Anchor.BOTTOM_LEFT, 103f, 205f, sizeDp = 38f)

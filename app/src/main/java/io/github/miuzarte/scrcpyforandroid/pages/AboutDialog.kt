@@ -38,7 +38,7 @@ fun AboutDialog(onDismiss: () -> Unit) {
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
             ) {
-                Text("HandyPad")
+                Text("VirtualGamepad")
                 Text("虚拟手柄 / 远程控制工具")
                 Text("")
                 Text("用到的开源项目:")

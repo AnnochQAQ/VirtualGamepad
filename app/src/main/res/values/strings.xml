@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">HandyPad</string>
+    <string name="app_name">VirtualGamepad</string>
+
 
 
     <!-- Main Tab Labels -->
