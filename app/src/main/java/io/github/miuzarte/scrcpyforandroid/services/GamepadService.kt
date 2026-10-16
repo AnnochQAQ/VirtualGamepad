@@ -48,19 +48,16 @@ class GamepadService: Service() {
         startForeground(NOTIFICATION_ID, buildNotification())
         AppRuntime.gamepadService = this
 
-val scrcpy = AppRuntime.scrcpy
-handler = if (scrcpy == null) null else GamepadInputHandler(
-scope = scope,
-deviceName = { "Virtual Gamepad" },
-onUhidCreate = { id, vid, pid, name, desc -> scrcpy.uhidCreate(id, vid, pid, name, desc) },
-onUhidInput = { id, data -> scrcpy.uhidInput(id, data) },
-onUhidDestroy = { id -> scrcpy.uhidDestroy(id) },
-onDebugChanged = null,
-)
-AppRuntime.gamepadHandler = handler
-
-AppRuntime.gamepadHandler = handler
-
+        val scrcpy = AppRuntime.scrcpy
+        handler = if (scrcpy == null) null else GamepadInputHandler(
+            scope = scope,
+            deviceName = { "Virtual Gamepad" },
+            onUhidCreate = { id, vid, pid, name, desc -> scrcpy.uhidCreate(id, vid, pid, name, desc) },
+            onUhidInput = { id, data -> scrcpy.uhidInput(id, data) },
+            onUhidDestroy = { id -> scrcpy.uhidDestroy(id) },
+            onDebugChanged = null,
+        )
+        AppRuntime.gamepadHandler = handler
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
