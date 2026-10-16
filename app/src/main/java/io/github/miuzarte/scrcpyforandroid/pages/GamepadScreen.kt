@@ -141,11 +141,10 @@ fun GamepadScreen(onExit: () -> Unit) {
         editMode = false
     }
 
-// handler 由前台 Service 持有; 进入手柄页时启动 Service
-// scrcpy 未就绪时不启动, 否则 Service 会创建出 handler = null 且不会重试
-LaunchedEffect(AppRuntime.scrcpy) {
-if (AppRuntime.scrcpy != null) GamepadService.start(context)
-}
+    // handler 由前台 Service 持有; 进入手柄页时启动 Service
+    LaunchedEffect(Unit) {
+        GamepadService.start(context)
+    }
     var handler by remember { mutableStateOf(AppRuntime.gamepadService?.handler) }
     LaunchedEffect(AppRuntime.gamepadService) {
         handler = AppRuntime.gamepadService?.handler
