@@ -69,6 +69,8 @@ import io.github.miuzarte.scrcpyforandroid.gamepad.namedLayoutFromJson
 import io.github.miuzarte.scrcpyforandroid.gamepad.namedLayoutToJson
 import io.github.miuzarte.scrcpyforandroid.scrcpy.GamepadInputHandler
 import io.github.miuzarte.scrcpyforandroid.services.AppRuntime
+import io.github.miuzarte.scrcpyforandroid.services.GamepadService
+
 import kotlinx.coroutines.launch
 
 private fun anchorCenterDp(
@@ -139,23 +141,18 @@ fun GamepadScreen(onExit: () -> Unit) {
         editMode = false
     }
 
-    val scrcpy = AppRuntime.scrcpy
-    val handler: GamepadInputHandler? = remember(scrcpy) {
-        if (scrcpy == null) return@remember null
-        GamepadInputHandler(
-            scope = scope,
-            deviceName = { "Virtual Gamepad" },
-            onUhidCreate = { id, vid, pid, name, desc -> scrcpy.uhidCreate(id, vid, pid, name, desc) },
-            onUhidInput = { id, data -> scrcpy.uhidInput(id, data) },
-            onUhidDestroy = { id -> scrcpy.uhidDestroy(id) },
-            onDebugChanged = null,
-        )
+    // handler 由前台 Service 持有; 进入手柄页时启动 Service
+    LaunchedEffect(Unit) {
+        GamepadService.start(context)
+    }
+    var handler by remember { mutableStateOf(AppRuntime.gamepadService?.handler) }
+    LaunchedEffect(AppRuntime.gamepadService) {
+        handler = AppRuntime.gamepadService?.handler
     }
     val controller = remember(handler) { GamepadController(handler) }
 
-    DisposableEffect(handler) {
-        AppRuntime.gamepadHandler = handler
-        onDispose { if (AppRuntime.gamepadHandler === handler) AppRuntime.gamepadHandler = null }
+    DisposableEffect(controller) {
+        onDispose { controller.releaseAll() }
     }
 
     DisposableEffect(activity) {

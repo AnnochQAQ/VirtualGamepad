@@ -6,7 +6,8 @@ class GamepadController(
     private val handler: GamepadInputHandler?,
 ) {
     private var pressedBits: Int = 0
-    private val pressedIds = linkedSetOf<String>()
+    private val pressedIds = androidx.compose.runtime.mutableStateSetOf<String>()
+
 
     private var leftX = 32768
     private var leftY = 32768
