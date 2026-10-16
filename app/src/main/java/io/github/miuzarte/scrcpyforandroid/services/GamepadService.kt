@@ -48,15 +48,19 @@ class GamepadService: Service() {
         startForeground(NOTIFICATION_ID, buildNotification())
         AppRuntime.gamepadService = this
 
-        val scrcpy = AppRuntime.scrcpy
-        handler = if (scrcpy == null) null else GamepadInputHandler(
-            scope = scope,
-            deviceName = { "Virtual Gamepad" },
-            onUhidCreate = { id, vid, pid, name, desc -> scrcpy.uhidCreate(id, vid, pid, name, desc) },
-            onUhidInput = { id, data -> scrcpy.uhidInput(id, data) },
-            onUhidDestroy = { id -> scrcpy.uhidDestroy(id) },
-            onDebugChanged = null,
-        )
+val scrcpy = AppRuntime.scrcpy
+handler = if (scrcpy == null) null else GamepadInputHandler(
+scope = scope,
+deviceName = { "Virtual Gamepad" },
+onUhidCreate = { id, vid, pid, name, desc -> scrcpy.uhidCreate(id, vid, pid, name, desc) },
+onUhidInput = { id, data -> scrcpy.uhidInput(id, data) },
+onUhidDestroy = { id -> scrcpy.uhidDestroy(id) },
+onDebugChanged = null,
+)
+AppRuntime.gamepadHandler = handler
+
+AppRuntime.gamepadHandler = handler
+
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -69,13 +73,15 @@ class GamepadService: Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    override fun onDestroy() {
-        handler?.destroy()
-        handler = null
-        AppRuntime.gamepadService = null
-        scope.cancel()
-        super.onDestroy()
-    }
+override fun onDestroy() {
+handler?.destroy()
+handler = null
+AppRuntime.gamepadHandler = null
+AppRuntime.gamepadService = null
+scope.cancel()
+super.onDestroy()
+}
+
 
     private fun createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
