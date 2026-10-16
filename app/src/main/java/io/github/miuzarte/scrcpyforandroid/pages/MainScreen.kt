@@ -114,27 +114,30 @@ fun MainScreen() {
                                         scope.launch {
                                             try {
                                                 withContext(Dispatchers.IO) {
-                                                    val session = AppRuntime.peekSessionOrNull()
-                                                        ?: error("会话未初始化")
-                                                    val ctrl = session.services.connectionController
-                                                    ctrl.connectWithTimeout(dev.host, dev.port, 10_000L)
-                                                    ctrl.handleAdbConnected(dev.host, dev.port)
-                                                    val scrcpy = AppRuntime.scrcpy ?: error("scrcpy 未初始化")
-                                                    if (!scrcpy.isStarted()) {
-                                                        scrcpy.start(
-                                                            ClientOptions(
-                                                                video = false,
-                                                                audio = false,
-                                                                control = true,
-                                                                gamepad = true,
-                                                                cleanup = false,
-                                                            ).fix().validate(),
-                                                        )
+                                                    kotlinx.coroutines.withTimeout(30_000L) {
+                                                        val session = AppRuntime.peekSessionOrNull()
+                                                            ?: error("会话未初始化")
+                                                        val ctrl = session.services.connectionController
+                                                        ctrl.connectWithTimeout(dev.host, dev.port, 10_000L)
+                                                        ctrl.handleAdbConnected(dev.host, dev.port)
+                                                        val scrcpy = AppRuntime.scrcpy ?: error("scrcpy 未初始化")
+                                                        if (!scrcpy.isStarted()) {
+                                                            scrcpy.start(
+                                                                ClientOptions(
+                                                                    video = false,
+                                                                    audio = false,
+                                                                    control = true,
+                                                                    gamepad = true,
+                                                                    cleanup = false,
+                                                                ).fix().validate(),
+                                                            )
+                                                        }
                                                     }
                                                 }
                                                 connectedTo = dev
                                             } catch (e: Exception) {
-                                                error = e.message ?: e.javaClass.simpleName
+                                                error = (e.message ?: e.javaClass.simpleName) +
+                                                    " (" + e.javaClass.simpleName + ")"
                                             } finally {
                                                 connectingId = null
                                             }
