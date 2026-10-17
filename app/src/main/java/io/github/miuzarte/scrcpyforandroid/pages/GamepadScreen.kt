@@ -69,7 +69,6 @@ import io.github.miuzarte.scrcpyforandroid.gamepad.VirtualJoystickDef
 import io.github.miuzarte.scrcpyforandroid.gamepad.VirtualJoystick
 import io.github.miuzarte.scrcpyforandroid.gamepad.namedLayoutFromJson
 import io.github.miuzarte.scrcpyforandroid.gamepad.namedLayoutToJson
-import io.github.miuzarte.scrcpyforandroid.services.AppRuntime
 import io.github.miuzarte.scrcpyforandroid.services.GamepadService
 import kotlinx.coroutines.launch
 
@@ -96,25 +95,6 @@ private fun buttonSizeDp(def: VirtualButtonDef): Pair<Dp, Dp> = when (def.shape)
     ButtonShape.CIRCLE -> def.sizeDp.dp to def.sizeDp.dp
     ButtonShape.ROUNDED_RECT -> def.widthDp.dp to def.heightDp.dp
 }
-
-private fun isSelected(def: VirtualButtonDef, option: Binding): Boolean = when (option) {
-    is Binding.Bit -> def.hidBits.contains(option.bit)
-    is Binding.Axis -> def.axisTargets.contains(option.target)
-}
-
-private fun toggleBinding(def: VirtualButtonDef, option: Binding, selected: Boolean): VirtualButtonDef =
-    when (option) {
-        is Binding.Bit -> {
-            val bits = if (selected) (def.hidBits + option.bit).distinct() else def.hidBits - option.bit
-            def.copy(hidBits = bits)
-        }
-
-        is Binding.Axis -> {
-            val targets = if (selected) (def.axisTargets + option.target).distinct()
-            else def.axisTargets - option.target
-            def.copy(axisTargets = targets)
-        }
-    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -217,7 +197,7 @@ fun GamepadScreen(onExit: () -> Unit) {
 
     if (activeLayout == null) {
         Box(Modifier.fillMaxSize().background(Color(0xFF101010)), contentAlignment = Alignment.Center) {
-            Text("No layout", color = Color.White)
+            Text("没有布局", color = Color.White)
         }
         return
     }
@@ -231,7 +211,7 @@ fun GamepadScreen(onExit: () -> Unit) {
         currentWidthDp = wDp
         if (wDp <= hDp) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Landscape only", color = Color.White, fontSize = 24.sp)
+                Text("请横屏使用", color = Color.White, fontSize = 24.sp)
             }
             return@BoxWithConstraints
         }
@@ -263,7 +243,7 @@ fun GamepadScreen(onExit: () -> Unit) {
             )
             if (editing) {
                 ElementEditDialog(
-                    title = "Edit button",
+                    title = "编辑按键",
                     def = def,
                     isButton = true,
                     onDismiss = { editing = false },
@@ -311,11 +291,11 @@ fun GamepadScreen(onExit: () -> Unit) {
             modifier = Modifier.align(Alignment.TopCenter).padding(top = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            if (!editMode) TransparentButton("Settings") { showSettings = true }
+            if (!editMode) TransparentButton("设置") { showSettings = true }
             else {
-                TransparentButton("Add") { showAddButton = true }
-                TransparentButton("Save") { saveEdit() }
-                TransparentButton("Cancel") { editMode = false }
+                TransparentButton("添加按键") { showAddButton = true }
+                TransparentButton("保存") { saveEdit() }
+                TransparentButton("取消") { editMode = false }
             }
         }
     }
@@ -337,10 +317,10 @@ fun GamepadScreen(onExit: () -> Unit) {
     if (showSettings) {
         ModalBottomSheet(onDismissRequest = { showSettings = false }, sheetState = sheetState) {
             Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Settings")
-                TextButton(onClick = { showSettings = false; showLayoutManager = true }) { Text("Layouts") }
-                TextButton(onClick = { showLogs = true }) { Text("Logs") }
-                TextButton(onClick = { showSettings = false; onExit() }) { Text("Exit") }
+                Text("设置")
+                TextButton(onClick = { showSettings = false; showLayoutManager = true }) { Text("布局管理") }
+                TextButton(onClick = { showLogs = true }) { Text("日志") }
+                TextButton(onClick = { showSettings = false; onExit() }) { Text("退出手柄") }
             }
         }
     }
@@ -447,7 +427,7 @@ private fun AddButtonDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add button") },
+        title = { Text("添加按键") },
         text = {
             Column(
                 Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
@@ -455,10 +435,10 @@ private fun AddButtonDialog(
             ) {
                 OutlinedTextField(
                     label, { label = it },
-                    label = { Text("Name") }, singleLine = true,
+                    label = { Text("名称") }, singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Text("Bindings:")
+                Text("触发的键值:")
                 HidBindings.options.forEach { opt ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(
@@ -489,9 +469,9 @@ private fun AddButtonDialog(
                 } else {
                     onDismiss()
                 }
-            }) { Text("Add") }
+            }) { Text("添加") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
     )
 }
 
@@ -525,46 +505,46 @@ private fun ElementEditDialog(
             ) {
                 OutlinedTextField(
                     editLabel, { editLabel = it },
-                    label = { Text("Name") }, singleLine = true,
+                    label = { Text("名称") }, singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
 
                 if (isButton) {
-                    Text("Shape")
+                    Text("形状")
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         TextButton(
                             onClick = { editShape = ButtonShape.CIRCLE },
                             modifier = Modifier.background(
                                 if (editShape == ButtonShape.CIRCLE) Color(0x33000000) else Color.Transparent,
                             ),
-                        ) { Text("Circle") }
+                        ) { Text("圆形") }
                         TextButton(
                             onClick = { editShape = ButtonShape.ROUNDED_RECT },
                             modifier = Modifier.background(
                                 if (editShape == ButtonShape.ROUNDED_RECT) Color(0x33000000) else Color.Transparent,
                             ),
-                        ) { Text("Rect") }
+                        ) { Text("长条") }
                     }
                 }
 
                 if (editShape == ButtonShape.CIRCLE) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Size")
+                        Text("大小")
                         Slider(editSize, { editSize = it }, valueRange = 32f..120f, modifier = Modifier.weight(1f).padding(start = 8.dp))
                     }
                 } else {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("W")
+                        Text("宽")
                         Slider(editWidth, { editWidth = it }, valueRange = 40f..160f, modifier = Modifier.weight(1f).padding(start = 8.dp))
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("H")
+                        Text("高")
                         Slider(editHeight, { editHeight = it }, valueRange = 24f..80f, modifier = Modifier.weight(1f).padding(start = 8.dp))
                     }
                 }
 
                 if (isButton) {
-                    Text("Bindings:")
+                    Text("触发的键值:")
                     HidBindings.options.forEach { opt ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(
@@ -592,9 +572,9 @@ private fun ElementEditDialog(
                         axisTargets = axes,
                     ),
                 )
-            }) { Text("OK") }
+            }) { Text("确定") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
     )
 }
 
@@ -609,7 +589,7 @@ private fun JoystickEditDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit joystick") },
+        title = { Text("编辑摇杆") },
         text = {
             Column(
                 Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
@@ -617,11 +597,11 @@ private fun JoystickEditDialog(
             ) {
                 OutlinedTextField(
                     editLabel, { editLabel = it },
-                    label = { Text("Name") }, singleLine = true,
+                    label = { Text("名称") }, singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Size")
+                    Text("大小")
                     Slider(editSize, { editSize = it }, valueRange = 80f..200f, modifier = Modifier.weight(1f).padding(start = 8.dp))
                 }
             }
@@ -629,9 +609,9 @@ private fun JoystickEditDialog(
         confirmButton = {
             TextButton(onClick = {
                 onConfirm(def.copy(label = editLabel, sizeDp = editSize))
-            }) { Text("OK") }
+            }) { Text("确定") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
     )
 }
 
@@ -654,43 +634,43 @@ private fun LayoutManagerScreen(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("Layouts", color = Color.White, fontSize = 20.sp, modifier = Modifier.weight(1f))
-            TextButton(onClick = onBack) { Text("Back", color = Color.White) }
+            Text("布局管理", color = Color.White, fontSize = 20.sp, modifier = Modifier.weight(1f))
+            TextButton(onClick = onBack) { Text("返回", color = Color.White) }
         }
 
         collection.layouts.forEach { nl ->
             Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text((if (nl.id == collection.activeId) "● " else "") + nl.name, modifier = Modifier.weight(1f), color = Color.White)
-                TextButton(onClick = { onEdit(nl) }) { Text("Edit", color = Color.White) }
-                TextButton(onClick = { onCollectionChange(collection.copy(activeId = nl.id)) }) { Text("Switch", color = Color.White) }
-                TextButton(onClick = { renaming = nl }) { Text("Rename", color = Color.White) }
-                TextButton(onClick = { exporting = nl }) { Text("Export", color = Color.White) }
-                if (!nl.isPreset) TextButton(onClick = { deleting = nl }) { Text("Delete", color = Color.White) }
-                TextButton(onClick = { resetting = nl }) { Text("Reset", color = Color.White) }
+                TextButton(onClick = { onEdit(nl) }) { Text("编辑", color = Color.White) }
+                TextButton(onClick = { onCollectionChange(collection.copy(activeId = nl.id)) }) { Text("切换", color = Color.White) }
+                TextButton(onClick = { renaming = nl }) { Text("改名", color = Color.White) }
+                TextButton(onClick = { exporting = nl }) { Text("导出", color = Color.White) }
+                if (!nl.isPreset) TextButton(onClick = { deleting = nl }) { Text("删除", color = Color.White) }
+                TextButton(onClick = { resetting = nl }) { Text("重置", color = Color.White) }
             }
         }
 
         TextButton(onClick = {
-            val newLayout = GamepadPresets.blank("New layout ${collection.layouts.size + 1}")
+            val newLayout = GamepadPresets.blank("新布局 ${collection.layouts.size + 1}")
             onCollectionChange(collection.copy(layouts = collection.layouts + newLayout, activeId = newLayout.id))
-        }) { Text("New blank", color = Color.White) }
+        }) { Text("新建空白布局", color = Color.White) }
 
         TextButton(onClick = {
-            val preset = NamedLayout("preset_default_${System.currentTimeMillis()}", "Default layout ${collection.layouts.size + 1}", GamepadPresets.default(), false)
+            val preset = NamedLayout("preset_default_${System.currentTimeMillis()}", "默认布局 ${collection.layouts.size + 1}", GamepadPresets.default(), false)
             onCollectionChange(collection.copy(layouts = collection.layouts + preset, activeId = preset.id))
-        }) { Text("New default", color = Color.White) }
+        }) { Text("新建默认布局", color = Color.White) }
 
-        TextButton(onClick = { showImport = true }) { Text("Import JSON", color = Color.White) }
+        TextButton(onClick = { showImport = true }) { Text("导入 JSON", color = Color.White) }
     }
 
     exporting?.let { nl ->
         val json = remember(nl.id) { namedLayoutToJson(nl).toString(2) }
         AlertDialog(
             onDismissRequest = { exporting = null },
-            title = { Text("Export: ${nl.name}") },
+            title = { Text("导出布局: ${nl.name}") },
             text = { OutlinedTextField(json, {}, readOnly = true, modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) },
-            confirmButton = { TextButton(onClick = { clipboard.setText(AnnotatedString(json)); exporting = null }) { Text("Copy") } },
-            dismissButton = { TextButton(onClick = { exporting = null }) { Text("Close") } },
+            confirmButton = { TextButton(onClick = { clipboard.setText(AnnotatedString(json)); exporting = null }) { Text("复制") } },
+            dismissButton = { TextButton(onClick = { exporting = null }) { Text("关闭") } },
         )
     }
 
@@ -699,7 +679,7 @@ private fun LayoutManagerScreen(
         var err by remember { mutableStateOf<String?>(null) }
         AlertDialog(
             onDismissRequest = { showImport = false },
-            title = { Text("Import layout") },
+            title = { Text("导入布局") },
             text = {
                 Column(Modifier.fillMaxWidth()) {
                     OutlinedTextField(text, { text = it }, label = { Text("JSON") }, modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()))
@@ -709,13 +689,13 @@ private fun LayoutManagerScreen(
             confirmButton = {
                 TextButton(onClick = {
                     val nl = runCatching { namedLayoutFromJson(org.json.JSONObject(text)) }.getOrNull()
-                    if (nl == null) { err = "Parse failed" } else {
+                    if (nl == null) { err = "解析失败" } else {
                         onCollectionChange(collection.copy(layouts = collection.layouts + nl, activeId = nl.id))
                         showImport = false
                     }
-                }) { Text("Import") }
+                }) { Text("导入") }
             },
-            dismissButton = { TextButton(onClick = { showImport = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { showImport = false }) { Text("取消") } },
         )
     }
 
@@ -723,45 +703,45 @@ private fun LayoutManagerScreen(
         var name by remember(nl.id) { mutableStateOf(nl.name) }
         AlertDialog(
             onDismissRequest = { renaming = null },
-            title = { Text("Rename") },
+            title = { Text("改名") },
             text = { OutlinedTextField(name, { name = it }) },
             confirmButton = {
                 TextButton(onClick = {
                     onCollectionChange(collection.copy(layouts = collection.layouts.map { if (it.id == nl.id) it.copy(name = name) else it }))
                     renaming = null
-                }) { Text("OK") }
+                }) { Text("确定") }
             },
-            dismissButton = { TextButton(onClick = { renaming = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { renaming = null }) { Text("取消") } },
         )
     }
 
     deleting?.let { nl ->
         AlertDialog(
             onDismissRequest = { deleting = null },
-            title = { Text("Delete layout") },
-            text = { Text("Delete \"${nl.name}\"?") },
+            title = { Text("删除布局") },
+            text = { Text("删除 \"${nl.name}\"？") },
             confirmButton = {
                 TextButton(onClick = {
                     onCollectionChange(collection.copy(layouts = collection.layouts.filterNot { it.id == nl.id }))
                     deleting = null
-                }) { Text("Delete") }
+                }) { Text("删除") }
             },
-            dismissButton = { TextButton(onClick = { deleting = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { deleting = null }) { Text("取消") } },
         )
     }
 
     resetting?.let { nl ->
         AlertDialog(
             onDismissRequest = { resetting = null },
-            title = { Text("Reset layout") },
-            text = { Text("Reset \"${nl.name}\" to default?") },
+            title = { Text("重置布局") },
+            text = { Text("把 \"${nl.name}\" 重置成默认?") },
             confirmButton = {
                 TextButton(onClick = {
                     onCollectionChange(collection.copy(layouts = collection.layouts.map { if (it.id == nl.id) it.copy(layout = GamepadPresets.default()) else it }))
                     resetting = null
-                }) { Text("Reset") }
+                }) { Text("重置") }
             },
-            dismissButton = { TextButton(onClick = { resetting = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { resetting = null }) { Text("取消") } },
         )
     }
 }
