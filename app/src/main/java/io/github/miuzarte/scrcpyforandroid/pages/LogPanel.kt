@@ -12,6 +12,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,6 +25,7 @@ import io.github.miuzarte.scrcpyforandroid.services.EventLogger
 @Composable
 fun LogDialog(onDismiss: () -> Unit) {
     val context = LocalContext.current
+    val clipboard = LocalClipboardManager.current
     val logs = EventLogger.eventLog
 
     AlertDialog(
@@ -53,6 +56,11 @@ fun LogDialog(onDismiss: () -> Unit) {
         },
         confirmButton = {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = {
+                    clipboard.setText(
+                        AnnotatedString(logs.joinToString("\\n") { it.render(context) }),
+                    )
+                }) { Text("复制全部") }
                 TextButton(onClick = { EventLogger.clearLogs() }) { Text("清空") }
                 TextButton(onClick = onDismiss) { Text("关闭") }
             }
