@@ -1,40 +1,23 @@
 package io.github.miuzarte.scrcpyforandroid.scrcpy
 
 import android.util.Log
-import io.github.miuzarte.scrcpyforandroid.services.EventLogger
-
-
-
-import io.github.miuzarte.scrcpyforandroid.services.EventLogger
 import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
+import io.github.miuzarte.scrcpyforandroid.services.EventLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.math.roundToInt
 
-/**
- * Gamepad passthrough (UHID virtual gamepad).
- *
- * The scrcpy server has no dedicated gamepad control message; it forwards a
- * virtual HID gamepad over the UHID (create/input/destroy) messages. This mirrors
- * upstream scrcpy `--gamepad=uhid`: we capture the physical controller connected to
- * this (controller-side) device, keep a per-device state, and emit a 15-byte HID
- * input report whenever a button or axis changes.
- */
 object GamepadHid {
-    const val VENDOR_ID = 0x045e // Microsoft
-    const val PRODUCT_ID = 0x028e // Xbox 360 pad
-    const val NAME = "Scrcpy Virtual Gamepad" // default value of Settings.Misc gamepad name
+    const val VENDOR_ID = 0x045e
+    const val PRODUCT_ID = 0x028e
+    const val NAME = "Scrcpy Virtual Gamepad"
     const val REPORT_SIZE = 15
-
-    // Reserved for future keyboard/mouse UHID devices (matches upstream ids).
     const val FIRST_ID = 3
 
-    // Low 16 bits are forwarded "as is" into the report; the 4 dpad direction
-    // bits live above them and are translated into a single hat-switch byte.
     private const val BUTTONS_MASK = 0xFFFF
     const val BIT_DPAD_UP = 0x10000
     const val BIT_DPAD_DOWN = 0x20000
@@ -42,75 +25,54 @@ object GamepadHid {
     const val BIT_DPAD_RIGHT = 0x80000
     const val DPAD_BITS_MASK = BIT_DPAD_UP or BIT_DPAD_DOWN or BIT_DPAD_LEFT or BIT_DPAD_RIGHT
 
-    /**
-     * True when [device] is a game controller. Android reports gamepad input across
-     * several sources (SOURCE_GAMEPAD for buttons, SOURCE_JOYSTICK for axes, and
-     * even KEYCODE_DPAD_* key events), so we key off the INPUT DEVICE's capabilities
-     * rather than any single event source.
-     */
     fun isGameController(device: InputDevice?): Boolean {
         if (device == null) return false
-        // SOURCE_* 是"类别位 + 类型位"的复合常量 (KEYBOARD 0x101 / DPAD 0x201 / GAMEPAD 0x401
-        // 共用低位 0x01), 所以只能整体比较; 用 `and != 0` 会把键盘/方向键类设备也判成手柄
         return device.supportsSource(InputDevice.SOURCE_GAMEPAD) ||
                 device.supportsSource(InputDevice.SOURCE_JOYSTICK)
     }
 
-    /**
-     * Standard gamepad report descriptor (Xbox-style). 15-byte reports:
-     *   [0..1] left stick X, [2..3] left stick Y (0..65535)
-     *   [4..5] right stick X, [6..7] right stick Y
-     *   [8..9] L2, [10..11] R2 (0..32767)
-     *   [12..13] buttons (16-bit little-endian), [14] hat switch (0..8)
-     */
     val reportDescriptor: ByteArray = intArrayOf(
-        0x05, 0x01, // Usage Page (Generic Desktop)
-        0x09, 0x05, // Usage (Gamepad)
-        0xA1, 0x01, // Collection (Application)
-        0xA1, 0x00, // Collection (Physical)
-
-        0x05, 0x01, // Usage Page (Generic Desktop)
-        0x09, 0x30, // Usage (X)   left stick x
-        0x09, 0x31, // Usage (Y)   left stick y
-        0x09, 0x33, // Usage (Rx)  right stick x
-        0x09, 0x34, // Usage (Ry)  right stick y
-        0x15, 0x00, // Logical Minimum (0)
-        0x27, 0xFF, 0xFF, 0x00, 0x00, // Logical Maximum (65535)
-        0x75, 0x10, // Report Size (16)
-        0x95, 0x04, // Report Count (4)
-        0x81, 0x02, // Input (Data, Variable, Absolute)
-
-        0x05, 0x01, // Usage Page (Generic Desktop)
-        0x09, 0x32, // Usage (Z)
-        0x09, 0x35, // Usage (Rz)
-        0x15, 0x00, // Logical Minimum (0)
-        0x26, 0xFF, 0x7F, // Logical Maximum (32767)
-        0x75, 0x10, // Report Size (16)
-        0x95, 0x02, // Report Count (2)
-        0x81, 0x02, // Input (Data, Variable, Absolute)
-
-        0x05, 0x09, // Usage Page (Buttons)
-        0x19, 0x01, // Usage Minimum (1)
-        0x29, 0x10, // Usage Maximum (16)
-        0x15, 0x00, // Logical Minimum (0)
-        0x25, 0x01, // Logical Maximum (1)
-        0x95, 0x10, // Report Count (16)
-        0x75, 0x01, // Report Size (1)
-        0x81, 0x02, // Input (Data, Variable, Absolute)
-
-        0x05, 0x01, // Usage Page (Generic Desktop)
-        0x09, 0x39, // Usage (Hat switch)
-        0x15, 0x01, // Logical Minimum (1)
-        0x25, 0x08, // Logical Maximum (8)
-        0x75, 0x04, // Report Size (4)
-        0x95, 0x01, // Report Count (1)
-        0x81, 0x42, // Input (Data, Variable, Null State)
-
-        0xC0, // End Collection
-        0xC0, // End Collection
+        0x05, 0x01,
+        0x09, 0x05,
+        0xA1, 0x01,
+        0xA1, 0x00,
+        0x05, 0x01,
+        0x09, 0x30,
+        0x09, 0x31,
+        0x09, 0x33,
+        0x09, 0x34,
+        0x15, 0x00,
+        0x27, 0xFF, 0xFF, 0x00, 0x00,
+        0x75, 0x10,
+        0x95, 0x04,
+        0x81, 0x02,
+        0x05, 0x01,
+        0x09, 0x32,
+        0x09, 0x35,
+        0x15, 0x00,
+        0x26, 0xFF, 0x7F,
+        0x75, 0x10,
+        0x95, 0x02,
+        0x81, 0x02,
+        0x05, 0x09,
+        0x19, 0x01,
+        0x29, 0x10,
+        0x15, 0x00,
+        0x25, 0x01,
+        0x95, 0x10,
+        0x75, 0x01,
+        0x81, 0x02,
+        0x05, 0x01,
+        0x09, 0x39,
+        0x15, 0x01,
+        0x25, 0x08,
+        0x75, 0x04,
+        0x95, 0x01,
+        0x81, 0x42,
+        0xC0,
+        0xC0,
     ).map { it.toByte() }.toByteArray()
 
-    /** Per-device gamepad state. */
     data class Slot(
         var buttons: Int = 0,
         var axisLeftX: Int = 0x8000,
@@ -121,22 +83,19 @@ object GamepadHid {
         var axisRightTrigger: Int = 0,
     )
 
-    /** Android keycode -> report bit (or dpad direction bit). */
     fun buttonBit(keyCode: Int): Int? = when (keyCode) {
-        KeyEvent.KEYCODE_BUTTON_A -> 0x0001 // south
-        KeyEvent.KEYCODE_BUTTON_B -> 0x0002 // east
-        KeyEvent.KEYCODE_BUTTON_X -> 0x0008 // west
-        KeyEvent.KEYCODE_BUTTON_Y -> 0x0010 // north
-        KeyEvent.KEYCODE_BUTTON_L1 -> 0x0040 // left shoulder
-        KeyEvent.KEYCODE_BUTTON_R1 -> 0x0080 // right shoulder
-        KeyEvent.KEYCODE_BUTTON_SELECT -> 0x0400 // back
-        // Generic.kl 系手柄 (没有厂商 kl 的手柄 / 遥控器) 的返回键在 Android 层就是 BACK,
-        // 之前它落在未映射分支里被静默丢弃, 这里并入虚拟手柄的同一个 select / back 位
+        KeyEvent.KEYCODE_BUTTON_A -> 0x0001
+        KeyEvent.KEYCODE_BUTTON_B -> 0x0002
+        KeyEvent.KEYCODE_BUTTON_X -> 0x0008
+        KeyEvent.KEYCODE_BUTTON_Y -> 0x0010
+        KeyEvent.KEYCODE_BUTTON_L1 -> 0x0040
+        KeyEvent.KEYCODE_BUTTON_R1 -> 0x0080
+        KeyEvent.KEYCODE_BUTTON_SELECT -> 0x0400
         KeyEvent.KEYCODE_BACK -> 0x0400
-        KeyEvent.KEYCODE_BUTTON_START -> 0x0800 // start
-        KeyEvent.KEYCODE_BUTTON_MODE -> 0x1000 // guide
-        KeyEvent.KEYCODE_BUTTON_THUMBL -> 0x2000 // left stick
-        KeyEvent.KEYCODE_BUTTON_THUMBR -> 0x4000 // right stick
+        KeyEvent.KEYCODE_BUTTON_START -> 0x0800
+        KeyEvent.KEYCODE_BUTTON_MODE -> 0x1000
+        KeyEvent.KEYCODE_BUTTON_THUMBL -> 0x2000
+        KeyEvent.KEYCODE_BUTTON_THUMBR -> 0x4000
         KeyEvent.KEYCODE_DPAD_UP -> BIT_DPAD_UP
         KeyEvent.KEYCODE_DPAD_DOWN -> BIT_DPAD_DOWN
         KeyEvent.KEYCODE_DPAD_LEFT -> BIT_DPAD_LEFT
@@ -144,12 +103,6 @@ object GamepadHid {
         else -> null
     }
 
-    /**
-     * Hat-switch value for the current dpad directions:
-     *      8 1 2
-     *      7 0 3
-     *      6 5 4
-     */
     fun dpadValue(buttons: Int): Int {
         val up = buttons and BIT_DPAD_UP != 0
         val down = buttons and BIT_DPAD_DOWN != 0
@@ -181,7 +134,6 @@ object GamepadHid {
         return data
     }
 
-    /** Normalize a raw axis value into [0, outMax]. */
     fun rescale(value: Float, min: Float, max: Float, outMax: Int): Int {
         if (max <= min) return outMax / 2
         val normalized = ((value - min) / (max - min)).coerceIn(0f, 1f)
@@ -194,11 +146,6 @@ object GamepadHid {
     }
 }
 
-/**
- * Captures gamepad key/motion events from the controller-side device and forwards
- * them as a UHID virtual gamepad. A UHID_CREATE is sent lazily on the first event
- * of a controller; UHID_INPUT on every state change; UHID_DESTROY on [destroy].
- */
 class GamepadInputHandler(
     private val scope: CoroutineScope,
     private val deviceName: () -> String,
@@ -222,14 +169,11 @@ class GamepadInputHandler(
     private val idByDevice = HashMap<Int, Int>()
     private var nextId = GamepadHid.FIRST_ID
 
-    // Serializes UHID_CREATE + UHID_INPUT for all devices so an input can never be
-    // written ahead of the create of a controller (which would make the server drop it).
     private val sendMutexes = HashMap<Int, Mutex>()
 
     private fun mutexFor(deviceId: Int): Mutex =
         synchronized(sendMutexes) { sendMutexes.getOrPut(deviceId) { Mutex() } }
 
-    /** Handle a gamepad button key event. Returns true if it was consumed. */
     fun handleKeyEvent(event: KeyEvent): Boolean {
         if (!GamepadHid.isGameController(InputDevice.getDevice(event.deviceId))) return false
         val bit = GamepadHid.buttonBit(event.keyCode) ?: return false
@@ -244,7 +188,6 @@ class GamepadInputHandler(
         return true
     }
 
-    /** Handle a gamepad axis motion event. Returns true if it was consumed. */
     fun handleGenericMotionEvent(event: MotionEvent): Boolean {
         if (!GamepadHid.isGameController(InputDevice.getDevice(event.deviceId))) return false
         val deviceId = event.deviceId
@@ -265,15 +208,11 @@ class GamepadInputHandler(
         slot.axisRightTrigger = readAxis(device, event, MotionEvent.AXIS_RTRIGGER, 32767)
             ?: slot.axisRightTrigger
 
-        // D-pad: some controllers report it only as a hat axis (AXIS_HAT_X/Y),
-        // while others (or the OS compatibility layer) report it as KEYCODE_DPAD_*
-        // key events. Handle the hat axis here so the d-pad still works either way.
         val hatX = readRawAxis(device, event, MotionEvent.AXIS_HAT_X)
         val hatY = readRawAxis(device, event, MotionEvent.AXIS_HAT_Y)
         if (hatX != null || hatY != null) {
             val hx = hatX ?: 0f
             val hy = hatY ?: 0f
-            // Recompute the 4 d-pad direction bits from the analog hat position.
             slot.buttons = slot.buttons and GamepadHid.DPAD_BITS_MASK.inv()
             if (hy < -0.5f) slot.buttons = slot.buttons or GamepadHid.BIT_DPAD_UP
             if (hy > 0.5f) slot.buttons = slot.buttons or GamepadHid.BIT_DPAD_DOWN
@@ -285,21 +224,12 @@ class GamepadInputHandler(
         return true
     }
 
-    /**
-     * 虚拟手柄入口: 直接设置"当前所有按下的 HID 位"
-     *
-     * 与物理手柄共用同一套 deviceId 机制, 但虚拟手柄固定用一个特殊 deviceId,
-     * 因此会生成一个独立的 UHID 设备 (远程端会看到两个手柄)
-     */
     fun onVirtualButtons(bits: Int) {
         val state = ensureDevice(VIRTUAL_DEVICE_ID) ?: return
         state.slot.buttons = bits
         send(VIRTUAL_DEVICE_ID, state)
     }
 
-    /**
-     * 虚拟手柄入口: 设置摇杆轴值 (0..65535, 中位 32768)
-     */
     fun onVirtualJoystick(
         leftX: Int,
         leftY: Int,
@@ -314,13 +244,11 @@ class GamepadInputHandler(
         send(VIRTUAL_DEVICE_ID, state)
     }
 
-
-    /** Destroy all created UHID devices (call on session end / screen dispose). */
     fun destroy() {
-
         val ids = idByDevice.values.toList()
         idByDevice.clear()
         states.clear()
+        synchronized(sendMutexes) { sendMutexes.clear() }
         for (id in ids) {
             scope.launch {
                 try {
@@ -337,7 +265,6 @@ class GamepadInputHandler(
         if (state == null) {
             val id = nextId++
             if (id > 0xFFFF) {
-                // Exhausted ids; drop new controllers rather than breaking the stream.
                 return null
             }
             idByDevice[deviceId] = id
@@ -350,12 +277,10 @@ class GamepadInputHandler(
     private fun send(deviceId: Int, state: DeviceState) {
         val id = idByDevice[deviceId] ?: return
         val report = GamepadHid.buildReport(state.slot)
-        Log.d(TAG, "send: deviceId=\$deviceId id=\$id created=\${state.created}")
+        EventLogger.logEvent("send: deviceId=$deviceId id=$id created=${state.created}", Log.DEBUG)
         scope.launch {
-            // Hold the lock across create+input so the create is always transmitted
-            // before the first input of a controller (even under a burst of events).
             mutexFor(deviceId).withLock {
-                Log.d(TAG, "send: acquired lock deviceId=\$deviceId id=\$id created=\${state.created}")
+                EventLogger.logEvent("send: acquired lock deviceId=$deviceId id=$id created=${state.created}", Log.DEBUG)
                 if (!state.created) {
                     try {
                         onUhidCreate(
@@ -366,18 +291,19 @@ class GamepadInputHandler(
                             GamepadHid.reportDescriptor,
                         )
                         state.created = true
-                        Log.d(TAG, "uhidCreate ok id=\$id")
+                        EventLogger.logEvent("uhidCreate ok id=$id", Log.DEBUG)
                     } catch (t: Throwable) {
-                        Log.w(TAG, "uhidCreate failed id=\$id", t)
-                        // Keep created=false so a later event retries the create.
+                        Log.w(TAG, "uhidCreate failed", t)
+                        EventLogger.logEvent("uhidCreate failed id=$id: ${t.message}", Log.WARN, t)
                     }
                 }
                 if (state.created) {
                     try {
                         onUhidInput(id, report)
-                        Log.d(TAG, "uhidInput ok id=\$id")
+                        EventLogger.logEvent("uhidInput ok id=$id", Log.DEBUG)
                     } catch (t: Throwable) {
-                        Log.w(TAG, "uhidInput failed id=\$id", t)
+                        Log.w(TAG, "uhidInput failed", t)
+                        EventLogger.logEvent("uhidInput failed id=$id: ${t.message}", Log.WARN, t)
                     }
                 }
             }
@@ -415,8 +341,6 @@ class GamepadInputHandler(
         axis: Int,
         outMax: Int,
     ): Int? {
-        // Only consider axes the controller actually exposes (via its motion ranges),
-        // so an absent axis falls through to the next fallback axis.
         val range = device?.let { runCatching { it.getMotionRange(axis) }.getOrNull() }
             ?: return null
         val value = event.getAxisValue(axis)
@@ -425,7 +349,6 @@ class GamepadInputHandler(
         return GamepadHid.rescale(value, min, max, outMax)
     }
 
-    /** Raw (unscaled) axis value, or null when the device does not expose [axis]. */
     private fun readRawAxis(
         device: InputDevice?,
         event: MotionEvent,
@@ -437,7 +360,6 @@ class GamepadInputHandler(
 
     private companion object {
         const val TAG = "GamepadInput"
-        /** 虚拟手柄固定 deviceId (物理手柄的 deviceId 都 >= 0, 负数不冲突) */
         const val VIRTUAL_DEVICE_ID = -100
     }
 }

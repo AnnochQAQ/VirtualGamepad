@@ -15,7 +15,6 @@ import top.yukonga.miuix.kmp.basic.SnackbarDuration
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.SnackbarResult
 
-// 用于不同 activity 之间传递实例
 object AppRuntime {
     private lateinit var appContext: Context
 
@@ -32,25 +31,15 @@ object AppRuntime {
     var currentConnectionTarget: ConnectionTarget? = null
     var currentConnectedDevice: ConnectedDeviceInfo? = null
 
-    /**
-     * 当前活跃的虚拟/物理手柄 handler, 供 MainActivity 转发物理手柄事件
-     */
     var gamepadHandler: io.github.miuzarte.scrcpyforandroid.scrcpy.GamepadInputHandler? = null
 
-    /** 前台手柄 Service (常驻, 持有 handler) */
     var gamepadService: GamepadService? = null
 
-
-
-    // 当前设备使用的 profile ID (session 级, 脱离快捷设备独立运作)
     val currentConnectionProfileId = MutableStateFlow("global")
 
     private val sessionLock = Any()
     private var sessionServices: DeviceConnectionServices? = null
 
-    /**
-     * 进程级会话: [Scrcpy] 与连接服务只创建一次, Activity 重建时复用
-     */
     internal fun obtainSession(sessionConfig: Scrcpy.SessionConfig): Session {
         synchronized(sessionLock) {
             val existingScrcpy = scrcpy
@@ -86,9 +75,6 @@ object AppRuntime {
         }
     }
 
-    /**
-     * 只读当前会话, 不创建; 没有就返回 null
-     */
     internal fun peekSessionOrNull(): Session? {
         synchronized(sessionLock) {
             val s = scrcpy ?: return null
@@ -97,11 +83,6 @@ object AppRuntime {
         }
     }
 
-    /**
-     * 收尾会话
-     *
-     * 只应在 MainActivity 真正退出 (isFinishing) 时调用
-     */
     internal fun releaseSession() {
         synchronized(sessionLock) {
             sessionServices?.autoReconnectManager?.close()
@@ -197,8 +178,6 @@ object AppRuntime {
         dismissNewest = dismissNewest,
     )
 
-    // application context 不经过 Activity 的 base context,
-    // 这里按当前应用内语言包装, 使 snackbar 等全局文案跟随应用内语言
     fun stringResource(@StringRes resId: Int) = AppLocale.localizedContext(appContext).getString(resId)
     fun stringResource(@StringRes resId: Int, vararg args: Any) =
         AppLocale.localizedContext(appContext).getString(resId, *args)

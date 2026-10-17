@@ -16,7 +16,6 @@ class MainActivity: LocalizedActivity() {
         AppRuntime.init(applicationContext)
         AppScreenOn.register(window)
 
-        // 创建进程级会话 (Scrcpy + 连接服务)
         AppRuntime.obtainSession(Scrcpy.SessionConfig())
 
         enableEdgeToEdge()
@@ -32,9 +31,6 @@ class MainActivity: LocalizedActivity() {
         super.onDestroy()
     }
 
-    /**
-     * 拦截物理手柄的按键事件, 转发到 UHID 虚拟手柄, 阻止它继续操作本机
-     */
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
         val handler = AppRuntime.gamepadHandler
         if (handler != null && handler.handleKeyEvent(event)) {
@@ -43,9 +39,6 @@ class MainActivity: LocalizedActivity() {
         return super.dispatchKeyEvent(event)
     }
 
-    /**
-     * 拦截物理手柄的摇杆/扳机事件, 转发到 UHID 虚拟手柄
-     */
     override fun dispatchGenericMotionEvent(event: android.view.MotionEvent): Boolean {
         val handler = AppRuntime.gamepadHandler
         if (handler != null && handler.handleGenericMotionEvent(event)) {
@@ -53,6 +46,4 @@ class MainActivity: LocalizedActivity() {
         }
         return super.dispatchGenericMotionEvent(event)
     }
-
 }
-
