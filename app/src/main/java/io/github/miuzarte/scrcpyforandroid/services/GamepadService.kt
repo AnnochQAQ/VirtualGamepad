@@ -47,23 +47,9 @@ class GamepadService: Service() {
         createChannel()
         startForeground(NOTIFICATION_ID, buildNotification())
         AppRuntime.gamepadService = this
-        ensureHandler()
-        EventLogger.logEvent("GamepadService.onCreate: scrcpy=${AppRuntime.scrcpy != null} handler=${handler != null}")
-    }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_STOP) {
-            stopSelf()
-            return START_NOT_STICKY
-        }
-        ensureHandler()
-        return START_STICKY
-    }
-
-    private fun ensureHandler() {
-        if (handler != null) return
-        val scrcpy = AppRuntime.scrcpy ?: return
-        handler = GamepadInputHandler(
+        val scrcpy = AppRuntime.scrcpy
+        handler = if (scrcpy == null) null else GamepadInputHandler(
             scope = scope,
             deviceName = { "Virtual Gamepad" },
             onUhidCreate = { id, vid, pid, name, desc -> scrcpy.uhidCreate(id, vid, pid, name, desc) },
@@ -72,7 +58,14 @@ class GamepadService: Service() {
             onDebugChanged = null,
         )
         AppRuntime.gamepadHandler = handler
-        EventLogger.logEvent("GamepadService.ensureHandler: created")
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_STOP) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
+        return START_STICKY
     }
 
     override fun onBind(intent: Intent?): IBinder? = null

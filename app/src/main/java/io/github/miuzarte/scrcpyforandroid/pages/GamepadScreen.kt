@@ -143,14 +143,13 @@ fun GamepadScreen(onExit: () -> Unit) {
     }
 
     // handler 由前台 Service 持有; 进入手柄页时启动 Service
-    // scrcpy 未就绪时反复重试, 避免 Service 创建出 handler = null 后不再重建
     LaunchedEffect(Unit) {
-        while (AppRuntime.gamepadService?.handler == null) {
-            GamepadService.start(context)
-            kotlinx.coroutines.delay(500)
-        }
+        GamepadService.start(context)
     }
-    val handler = AppRuntime.gamepadHandler
+    var handler by remember { mutableStateOf(AppRuntime.gamepadService?.handler) }
+    LaunchedEffect(AppRuntime.gamepadService) {
+        handler = AppRuntime.gamepadService?.handler
+    }
     val controller = remember(handler) { GamepadController(handler) }
 
     DisposableEffect(controller) {
