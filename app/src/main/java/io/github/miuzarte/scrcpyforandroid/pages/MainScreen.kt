@@ -15,9 +15,6 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.List
-
-import androidx.compose.material.icons.rounded.List
-
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -58,9 +55,6 @@ fun MainScreen() {
     var showAdd by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
     var showLogs by remember { mutableStateOf(false) }
-
-    var showLogs by remember { mutableStateOf(false) }
-
     var connectingId by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var connectedTo by remember { mutableStateOf<SavedDevice?>(null) }
@@ -82,7 +76,6 @@ fun MainScreen() {
                         Icon(Icons.Rounded.Info, contentDescription = "关于")
                     }
                 },
-
             )
         },
         floatingActionButton = {
@@ -148,8 +141,10 @@ fun MainScreen() {
                                                 }
                                                 connectedTo = dev
                                             } catch (e: Exception) {
-                                                error = (e.message ?: e.javaClass.simpleName) +
-                                                    " (" + e.javaClass.simpleName + ")"
+                                                val msg = e.message ?: e.javaClass.simpleName
+                                                error = if (msg.contains("timed out", ignoreCase = true))
+                                                    "设备无响应（端口可达但 ADB 握手超时）。请确认电脑/其他 adb 客户端没有占用该设备的 5555 端口，然后重试"
+                                                else "$msg (${e.javaClass.simpleName})"
                                             } finally {
                                                 connectingId = null
                                             }
@@ -224,10 +219,4 @@ fun MainScreen() {
     if (showLogs) {
         LogDialog(onDismiss = { showLogs = false })
     }
-
-
-    if (showLogs) {
-        LogDialog(onDismiss = { showLogs = false })
-    }
-
 }
