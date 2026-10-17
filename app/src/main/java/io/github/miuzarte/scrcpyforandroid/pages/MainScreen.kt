@@ -14,6 +14,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.List
+
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -53,6 +55,8 @@ fun MainScreen() {
 
     var showAdd by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
+    var showLogs by remember { mutableStateOf(false) }
+
     var connectingId by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var connectedTo by remember { mutableStateOf<SavedDevice?>(null) }
@@ -67,10 +71,14 @@ fun MainScreen() {
             TopAppBar(
                 title = { Text("HandyPad") },
                 actions = {
+                    IconButton(onClick = { showLogs = true }) {
+                        Icon(Icons.Rounded.List, contentDescription = "日志")
+                    }
                     IconButton(onClick = { showAbout = true }) {
                         Icon(Icons.Rounded.Info, contentDescription = "关于")
                     }
                 },
+
             )
         },
         floatingActionButton = {
@@ -208,4 +216,9 @@ fun MainScreen() {
     if (showAbout) {
         AboutDialog(onDismiss = { showAbout = false })
     }
+
+    if (showLogs) {
+        LogDialog(onDismiss = { showLogs = false })
+    }
+
 }

@@ -115,6 +115,8 @@ fun GamepadScreen(onExit: () -> Unit) {
     var showSettings by remember { mutableStateOf(false) }
     var showLayoutManager by remember { mutableStateOf(false) }
     var showAddButton by remember { mutableStateOf(false) }
+    var showLogs by remember { mutableStateOf(false) }
+
     var currentWidthDp by remember { mutableStateOf(0f) }
     val sheetState = rememberModalBottomSheetState()
 
@@ -352,12 +354,18 @@ fun GamepadScreen(onExit: () -> Unit) {
         )
     }
 
+    if (showLogs) {
+        LogDialog(onDismiss = { showLogs = false })
+    }
+
     if (showSettings) {
         ModalBottomSheet(onDismissRequest = { showSettings = false }, sheetState = sheetState) {
             Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("设置")
                 TextButton(onClick = { showSettings = false; showLayoutManager = true }) { Text("布局管理") }
+                TextButton(onClick = { showLogs = true }) { Text("日志") }
                 TextButton(onClick = { showSettings = false; onExit() }) { Text("退出手柄") }
+
             }
         }
     }
