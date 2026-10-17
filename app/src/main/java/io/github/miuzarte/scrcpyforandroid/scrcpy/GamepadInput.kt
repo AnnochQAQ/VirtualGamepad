@@ -222,7 +222,10 @@ class GamepadInputHandler(
 
     // Serializes UHID_CREATE + UHID_INPUT for all devices so an input can never be
     // written ahead of the create of a controller (which would make the server drop it).
-    private val sendMutex = Mutex()
+    private val sendMutexes = HashMap<Int, Mutex>()
+
+    private fun mutexFor(deviceId: Int): Mutex =
+        synchronized(sendMutexes) { sendMutexes.getOrPut(deviceId) { Mutex() } }
 
     /** Handle a gamepad button key event. Returns true if it was consumed. */
     fun handleKeyEvent(event: KeyEvent): Boolean {
@@ -349,7 +352,7 @@ class GamepadInputHandler(
         scope.launch {
             // Hold the lock across create+input so the create is always transmitted
             // before the first input of a controller (even under a burst of events).
-            sendMutex.withLock {
+            mutexFor(deviceId).withLock {
                 Log.d(TAG, "send: acquired lock deviceId=\$deviceId id=\$id created=\${state.created}")
                 if (!state.created) {
                     try {
