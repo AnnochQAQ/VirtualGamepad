@@ -117,6 +117,8 @@ fun GamepadScreen(onExit: () -> Unit) {
     var showAddButton by remember { mutableStateOf(false) }
     var showLogs by remember { mutableStateOf(false) }
 
+    var showLogs by remember { mutableStateOf(false) }
+
     var currentWidthDp by remember { mutableStateOf(0f) }
     val sheetState = rememberModalBottomSheetState()
 
@@ -145,14 +147,15 @@ fun GamepadScreen(onExit: () -> Unit) {
 
     // handler 由前台 Service 持有; 进入手柄页时启动 Service
     // scrcpy 未就绪时不启动, 否则 Service 会创建出 handler = null 且不会重试
-    LaunchedEffect(AppRuntime.scrcpy) {
-        if (AppRuntime.scrcpy != null) GamepadService.start(context)
+    LaunchedEffect(Unit) {
+        while (AppRuntime.gamepadService?.handler == null) {
+            GamepadService.start(context)
+            kotlinx.coroutines.delay(500)
+        }
     }
-    var handler by remember { mutableStateOf(AppRuntime.gamepadService?.handler) }
-    LaunchedEffect(AppRuntime.gamepadService) {
-        handler = AppRuntime.gamepadService?.handler
-    }
+    val handler = AppRuntime.gamepadHandler
     val controller = remember(handler) { GamepadController(handler) }
+
 
     DisposableEffect(controller) {
         onDispose { controller.releaseAll() }
@@ -352,6 +355,10 @@ fun GamepadScreen(onExit: () -> Unit) {
             },
             dismissButton = { TextButton(onClick = { showAddButton = false }) { Text("取消") } },
         )
+    }
+
+    if (showLogs) {
+        LogDialog(onDismiss = { showLogs = false })
     }
 
     if (showLogs) {

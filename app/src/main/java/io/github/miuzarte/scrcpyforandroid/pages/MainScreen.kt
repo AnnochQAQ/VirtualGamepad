@@ -16,6 +16,8 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.List
 
+import androidx.compose.material.icons.rounded.List
+
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -55,6 +57,8 @@ fun MainScreen() {
 
     var showAdd by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
+    var showLogs by remember { mutableStateOf(false) }
+
     var showLogs by remember { mutableStateOf(false) }
 
     var connectingId by remember { mutableStateOf<String?>(null) }
@@ -216,6 +220,11 @@ fun MainScreen() {
     if (showAbout) {
         AboutDialog(onDismiss = { showAbout = false })
     }
+
+    if (showLogs) {
+        LogDialog(onDismiss = { showLogs = false })
+    }
+
 
     if (showLogs) {
         LogDialog(onDismiss = { showLogs = false })

@@ -1,6 +1,8 @@
 package io.github.miuzarte.scrcpyforandroid.scrcpy
 
 import android.util.Log
+import io.github.miuzarte.scrcpyforandroid.services.EventLogger
+
 
 
 import io.github.miuzarte.scrcpyforandroid.services.EventLogger

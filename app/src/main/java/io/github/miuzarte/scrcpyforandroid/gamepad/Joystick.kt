@@ -47,6 +47,7 @@ fun VirtualJoystick(
         onAxis(def.axisY, ((ny + 1f) / 2f * 65535f).toInt())
     }
 
+
     fun reset() {
         scope.launch {
             launch { animX.animateTo(0f, spring(0.6f, 800f)) }
