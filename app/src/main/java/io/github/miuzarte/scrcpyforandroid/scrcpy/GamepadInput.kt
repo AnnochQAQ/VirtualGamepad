@@ -342,10 +342,12 @@ class GamepadInputHandler(
     private fun send(deviceId: Int, state: DeviceState) {
         val id = idByDevice[deviceId] ?: return
         val report = GamepadHid.buildReport(state.slot)
+        Log.d(TAG, "send: deviceId=\$deviceId id=\$id created=\${state.created}")
         scope.launch {
             // Hold the lock across create+input so the create is always transmitted
             // before the first input of a controller (even under a burst of events).
             sendMutex.withLock {
+                Log.d(TAG, "send: acquired lock deviceId=\$deviceId id=\$id created=\${state.created}")
                 if (!state.created) {
                     try {
                         onUhidCreate(
@@ -356,16 +358,18 @@ class GamepadInputHandler(
                             GamepadHid.reportDescriptor,
                         )
                         state.created = true
+                        Log.d(TAG, "uhidCreate ok id=\$id")
                     } catch (t: Throwable) {
-                        Log.w(TAG, "uhidCreate failed", t)
+                        Log.w(TAG, "uhidCreate failed id=\$id", t)
                         // Keep created=false so a later event retries the create.
                     }
                 }
                 if (state.created) {
                     try {
                         onUhidInput(id, report)
+                        Log.d(TAG, "uhidInput ok id=\$id")
                     } catch (t: Throwable) {
-                        Log.w(TAG, "uhidInput failed", t)
+                        Log.w(TAG, "uhidInput failed id=\$id", t)
                     }
                 }
             }
