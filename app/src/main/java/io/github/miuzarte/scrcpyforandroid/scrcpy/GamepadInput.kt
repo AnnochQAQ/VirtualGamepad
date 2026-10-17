@@ -235,12 +235,16 @@ class GamepadInputHandler(
         leftY: Int,
         rightX: Int,
         rightY: Int,
+        leftTrigger: Int = 0,
+        rightTrigger: Int = 0,
     ) {
         val state = ensureDevice(VIRTUAL_DEVICE_ID) ?: return
         state.slot.axisLeftX = leftX.coerceIn(0, 65535)
         state.slot.axisLeftY = leftY.coerceIn(0, 65535)
         state.slot.axisRightX = rightX.coerceIn(0, 65535)
         state.slot.axisRightY = rightY.coerceIn(0, 65535)
+        state.slot.axisLeftTrigger = leftTrigger.coerceIn(0, 32767)
+        state.slot.axisRightTrigger = rightTrigger.coerceIn(0, 32767)
         send(VIRTUAL_DEVICE_ID, state)
     }
 

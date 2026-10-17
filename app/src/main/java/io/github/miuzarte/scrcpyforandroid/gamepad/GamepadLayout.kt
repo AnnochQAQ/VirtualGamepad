@@ -11,21 +11,17 @@ enum class Anchor {
     val isBottom: Boolean get() = this == BOTTOM_LEFT || this == BOTTOM_CENTER || this == BOTTOM_RIGHT
 }
 
-/** 按键形状 */
 enum class ButtonShape { CIRCLE, ROUNDED_RECT }
 
 enum class GamepadSkin(val displayName: String) { NINTENDO("Nintendo") }
 
-/**
- * 虚拟按键
- *
- * CIRCLE: 用 sizeDp (直径)
- * ROUNDED_RECT: 用 widthDp / heightDp
- */
+enum class AxisTarget { LEFT_TRIGGER, RIGHT_TRIGGER }
+
 data class VirtualButtonDef(
     val id: String,
     val label: String,
     val hidBits: List<Int>,
+    val axisTargets: List<AxisTarget> = emptyList(),
     val anchor: Anchor,
     val offsetX: Float,
     val offsetY: Float,
@@ -69,25 +65,31 @@ data class LayoutCollection(
     val active: NamedLayout? get() = layouts.firstOrNull { it.id == activeId } ?: layouts.firstOrNull()
 }
 
-data class HidBitOption(val label: String, val bit: Int)
-
-object HidBits {
-    val options: List<HidBitOption> = listOf(
-        HidBitOption("A", 0x0001),
-        HidBitOption("B", 0x0002),
-        HidBitOption("X", 0x0008),
-        HidBitOption("Y", 0x0010),
-        HidBitOption("LB", 0x0040),
-        HidBitOption("RB", 0x0080),
-        HidBitOption("Back/-", 0x0400),
-        HidBitOption("Start/+", 0x0800),
-        HidBitOption("Home", 0x1000),
-        HidBitOption("L3", 0x2000),
-        HidBitOption("R3", 0x4000),
-        HidBitOption("DpadUp", 0x10000),
-        HidBitOption("DpadDown", 0x20000),
-        HidBitOption("DpadLeft", 0x40000),
-        HidBitOption("DpadRight", 0x80000),
-    )
+sealed class Binding {
+    data class Bit(val bit: Int) : Binding()
+    data class Axis(val target: AxisTarget) : Binding()
 }
 
+data class BindingOption(val label: String, val binding: Binding)
+
+object HidBindings {
+    val options: List<BindingOption> = listOf(
+        BindingOption("A", Binding.Bit(0x0001)),
+        BindingOption("B", Binding.Bit(0x0002)),
+        BindingOption("X", Binding.Bit(0x0008)),
+        BindingOption("Y", Binding.Bit(0x0010)),
+        BindingOption("LB", Binding.Bit(0x0040)),
+        BindingOption("RB", Binding.Bit(0x0080)),
+        BindingOption("LT", Binding.Axis(AxisTarget.LEFT_TRIGGER)),
+        BindingOption("RT", Binding.Axis(AxisTarget.RIGHT_TRIGGER)),
+        BindingOption("Back", Binding.Bit(0x0400)),
+        BindingOption("Start", Binding.Bit(0x0800)),
+        BindingOption("Home", Binding.Bit(0x1000)),
+        BindingOption("L3", Binding.Bit(0x2000)),
+        BindingOption("R3", Binding.Bit(0x4000)),
+        BindingOption("DpadUp", Binding.Bit(0x10000)),
+        BindingOption("DpadDown", Binding.Bit(0x20000)),
+        BindingOption("DpadLeft", Binding.Bit(0x40000)),
+        BindingOption("DpadRight", Binding.Bit(0x80000)),
+    )
+}

@@ -146,11 +146,7 @@ fun GamepadScreen(onExit: () -> Unit) {
     LaunchedEffect(Unit) {
         GamepadService.start(context)
     }
-    var handler by remember { mutableStateOf(AppRuntime.gamepadService?.handler) }
-    LaunchedEffect(AppRuntime.gamepadService) {
-        handler = AppRuntime.gamepadService?.handler
-    }
-    val controller = remember(handler) { GamepadController(handler) }
+    val controller = remember { GamepadController() }
 
     DisposableEffect(controller) {
         onDispose { controller.releaseAll() }

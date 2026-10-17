@@ -25,7 +25,7 @@ class GamepadLayoutStore(private val context: Context) {
     }
 
     private fun defaultCollection(): LayoutCollection {
-        val preset = NamedLayout("preset_nintendo", "默认", GamepadPresets.default(), true)
+        val preset = NamedLayout("preset_nintendo", "Default", GamepadPresets.default(), true)
         return LayoutCollection(listOf(preset), preset.id)
     }
 
@@ -58,9 +58,12 @@ internal fun namedLayoutToJson(nl: NamedLayout): JSONObject {
     o.put("designWidth", nl.layout.designWidth.toDouble())
     val bArr = JSONArray()
     nl.layout.buttons.forEach { b ->
+        val axisArr = JSONArray()
+        b.axisTargets.forEach { axisArr.put(it.name) }
         bArr.put(JSONObject()
             .put("id", b.id).put("label", b.label)
             .put("hidBits", JSONArray(b.hidBits))
+            .put("axisTargets", axisArr)
             .put("anchor", b.anchor.name)
             .put("offsetX", b.offsetX.toDouble())
             .put("offsetY", b.offsetY.toDouble())
@@ -92,8 +95,14 @@ internal fun namedLayoutFromJson(o: JSONObject): NamedLayout {
             val b = arr.optJSONObject(i) ?: continue
             val bitsArr = b.optJSONArray("hidBits") ?: JSONArray()
             val bits = buildList { for (k in 0 until bitsArr.length()) add(bitsArr.optInt(k)) }
+            val axisArr = b.optJSONArray("axisTargets") ?: JSONArray()
+            val axisTargets = buildList {
+                for (k in 0 until axisArr.length()) {
+                    runCatching { AxisTarget.valueOf(axisArr.optString(k)) }.getOrNull()?.let { add(it) }
+                }
+            }
             add(VirtualButtonDef(
-                b.optString("id"), b.optString("label"), bits,
+                b.optString("id"), b.optString("label"), bits, axisTargets,
                 Anchor.valueOf(b.optString("anchor", Anchor.CENTER.name)),
                 b.optDouble("offsetX", 0.0).toFloat(),
                 b.optDouble("offsetY", 0.0).toFloat(),
@@ -121,7 +130,7 @@ internal fun namedLayoutFromJson(o: JSONObject): NamedLayout {
     }
     return NamedLayout(
         o.optString("id", java.util.UUID.randomUUID().toString()),
-        o.optString("name", "导入的布局"),
+        o.optString("name", "Imported"),
         GamepadLayout(skin, buttons, joysticks, o.optDouble("designWidth", 0.0).toFloat()),
         false,
     )
